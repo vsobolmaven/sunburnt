@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-from __future__ import absolute_import
+
 import sys, os
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -41,8 +41,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'sunburnt'
-copyright = u'2011, Toby White'
+project = 'sunburnt'
+copyright = '2011, Toby White'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -179,8 +179,8 @@ htmlhelp_basename = 'sunburntdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'sunburnt.tex', u'sunburnt Documentation',
-   u'Toby White', 'manual'),
+  ('index', 'sunburnt.tex', 'sunburnt Documentation',
+   'Toby White', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -212,6 +212,6 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'sunburnt', u'sunburnt Documentation',
-     [u'Toby White'], 1)
+    ('index', 'sunburnt', 'sunburnt Documentation',
+     ['Toby White'], 1)
 ]

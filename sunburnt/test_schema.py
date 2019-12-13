@@ -1,7 +1,7 @@
-from __future__ import absolute_import
 
-from __future__ import print_function
-import cStringIO as StringIO
+
+
+import io as StringIO
 import datetime
 import uuid
 import six
@@ -64,16 +64,16 @@ def check_solr_date_from_string(s, date):
     assert solr_date(s)._dt_obj == date
 
 def test_solr_date_from_pydatetimes():
-    for k, v in samples_from_pydatetimes.items():
+    for k, v in list(samples_from_pydatetimes.items()):
         yield check_solr_date_from_date, k, v[0], v[1]
 
 def test_solr_date_from_mxdatetimes():
     if HAS_MX_DATETIME:
-        for k, v in samples_from_mxdatetimes.items():
+        for k, v in list(samples_from_mxdatetimes.items()):
             yield check_solr_date_from_date, k, v[0], v[1]
 
 def test_solr_date_from_strings():
-    for k, v in samples_from_strings.items():
+    for k, v in list(samples_from_strings.items()):
         yield check_solr_date_from_string, k, v
 
 
@@ -117,10 +117,10 @@ class TestReadingSchema(object):
     def test_serialize_dict(self):
         """ Test that each of the fields will serialize the relevant
         datatype appropriately."""
-        for k, v, v2 in (('int_field', 1, u'1'),
-                         ('text_field', 'text', u'text'),
-                         ('text_field', u'text', u'text'),
-                         ('boolean_field', True, u'true'),
+        for k, v, v2 in (('int_field', 1, '1'),
+                         ('text_field', 'text', 'text'),
+                         ('text_field', 'text', 'text'),
+                         ('boolean_field', True, 'true'),
                          ('location_field', 'POINT (30 10)', 'POINT (30 10)')):
             assert self.s.field_from_user_data(k, v).to_solr() == v2
 
@@ -170,7 +170,7 @@ class TestReadingSchema(object):
                 == field.from_solr(value)
 
         #Queried values will be escaped accordingly
-        assert field.to_query(value) == u'POLYGON\\ \\(\\(30\\ 10,\\ 10\\ 20,\\ 20\\ 40,\\ 40\\ 40,\\ 30\\ 10\\)\\)'
+        assert field.to_query(value) == 'POLYGON\\ \\(\\(30\\ 10,\\ 10\\ 20,\\ 20\\ 40,\\ 40\\ 40,\\ 30\\ 10\\)\\)'
 
 
 broken_schemata = {
@@ -220,7 +220,7 @@ def check_broken_schemata(n, s):
         assert False
 
 def test_broken_schemata():
-    for k, v in broken_schemata.items():
+    for k, v in list(broken_schemata.items()):
         yield check_broken_schemata, k, v
 
 

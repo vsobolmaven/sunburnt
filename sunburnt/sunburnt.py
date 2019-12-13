@@ -1,8 +1,8 @@
-from __future__ import absolute_import
+
 
 from os import path
 from lxml import etree
-import cStringIO as StringIO
+import io as StringIO
 from itertools import islice
 import shutil, tempfile, time, six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error, six.moves.urllib.parse
 import warnings

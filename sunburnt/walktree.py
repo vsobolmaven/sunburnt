@@ -8,8 +8,8 @@
 # IP: http://www.daniweb.com/software-development/python/code/395270
 """This module implements a generic depth first tree and graph traversal.
 """
-from __future__ import print_function
-from __future__ import absolute_import
+
+
 from collections import deque, namedtuple
 from functools import reduce
 import operator

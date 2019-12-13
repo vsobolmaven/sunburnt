@@ -1,11 +1,11 @@
-from __future__ import absolute_import
+
 from six.moves import range
 from six.moves import zip
 
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 
 import cgi, datetime, six.moves.urllib.parse
 
@@ -267,7 +267,7 @@ mlt_query_tests = (
         (("Content", None, "http://source.example.com"), (), ValueError),
         ((None, None, None), ({'mlt.fl': ['text_field']}, 'GET', ''), None),
         (('Content', 'not-an-encoding', None), (), LookupError),
-        ((u'Content', None, None), ({'stream.body': ['Content'], 'mlt.fl': ['text_field']}, 'GET', ''), None),
+        (('Content', None, None), ({'stream.body': ['Content'], 'mlt.fl': ['text_field']}, 'GET', ''), None),
         (('Cont\xe9nt', 'iso-8859-1', None), ({'stream.body': ['Cont\xc3\xa9nt'], 'mlt.fl': ['text_field']}, 'GET', ''), None),
         )
 

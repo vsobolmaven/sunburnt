@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 
 import math
 import operator
@@ -69,8 +69,8 @@ class solr_date(object):
         strtime = self._dt_obj.strftime("%Y-%m-%dT%H:%M:%S")
         microsecond = self.microsecond
         if microsecond:
-            return u"%s.%06dZ" % (strtime, microsecond)
-        return u"%sZ" % (strtime,)
+            return "%s.%06dZ" % (strtime, microsecond)
+        return "%sZ" % (strtime,)
 
     def __cmp__(self, other):
         try:
@@ -189,7 +189,7 @@ class SolrUnicodeField(SolrField):
 
 class SolrBooleanField(SolrField):
     def to_solr(self, value):
-        return u"true" if value else u"false"
+        return "true" if value else "false"
 
     def normalize(self, value):
         if isinstance(value, six.string_types):
@@ -472,7 +472,7 @@ class SolrSchema(object):
     attrib_translator = {"true": True, "1": True, "false": False, "0": False}
     def translate_attributes(self, attribs):
         return dict((k, self.attrib_translator.get(v, v))
-            for k, v in attribs.items())
+            for k, v in list(attribs.items()))
 
     def missing_fields(self, field_names):
         return [name for name in set(self.fields.keys()) - set(field_names)
@@ -489,7 +489,7 @@ class SolrSchema(object):
             if not field:
                 undefined_field_names.append(field_name)
             else:
-                for k, v in required_atts.items():
+                for k, v in list(required_atts.items()):
                     if getattr(field, k) != v:
                         raise SolrError("Field '%s' does not have %s=%s" % (field_name, k, v))
         if undefined_field_names:
@@ -592,7 +592,7 @@ class SolrUpdate(object):
         else:
             return self.DOC(*reduce(operator.add,
                                     [self.fields(name, values)
-                                     for name, values in doc.items()]))
+                                     for name, values in list(doc.items())]))
 
     def add(self, docs):
         if hasattr(docs, "items") or not hasattr(docs, "__iter__"):
@@ -633,7 +633,7 @@ class SolrDelete(object):
         # Is this a dictionary, or an document object, or a thing
         # that can be cast to a uniqueKey? (which could also be an
         # arbitrary object.
-        if isinstance(doc, (six.string_types, int, int, float)):
+        if isinstance(doc, (six.string_types, int, float)):
             # It's obviously not a document object, just coerce to appropriate type
             doc_id = doc
         elif hasattr(doc, "items"):

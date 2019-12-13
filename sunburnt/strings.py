@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 import six
 
 
@@ -9,14 +9,14 @@ class SolrString(six.text_type):
     lucene_special_chars = '+-&|!(){}[]^"~*?: \t\v\\/'
     def escape_for_lqs_term(self):
         if self in ["AND", "OR", "NOT", ""]:
-            return u'"%s"' % self
+            return '"%s"' % self
         chars = []
         for c in self.chars:
             if isinstance(c, six.string_types) and c in self.lucene_special_chars:
-                chars.append(u'\%s'%c)
+                chars.append('\%s'%c)
             else:
-                chars.append(u'%s'%c)
-        return u''.join(chars)
+                chars.append('%s'%c)
+        return ''.join(chars)
 
 
 class RawString(SolrString):
@@ -32,9 +32,9 @@ class WildcardString(SolrString):
         def __unicode__(self):
             return six.text_type(self.char)
     class Asterisk(SpecialChar):
-        char = u'*'
+        char = '*'
     class QuestionMark(SpecialChar):
-        char = u'?'
+        char = '?'
 
     def get_wildcards(self, s):
         backslash = False
@@ -46,14 +46,14 @@ class WildcardString(SolrString):
                 chars.append(c)
                 continue
             i += 1
-            if c == u'\\':
+            if c == '\\':
                 backslash = True
-            elif c == u'*':
+            elif c == '*':
                 chars.append(self.Asterisk())
-            elif c == u'?':
+            elif c == '?':
                 chars.append(self.QuestionMark())
             else:
                 chars.append(c)
         if backslash:
-            chars.append(u'\\')
+            chars.append('\\')
         return chars
