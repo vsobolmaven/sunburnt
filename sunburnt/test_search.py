@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from __future__ import print_function
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -32,8 +33,8 @@ def check_equal_with_debug(val1, val2):
         assert val1 == val2, "Unequal: %r, %r" % (val1, val2)
     except AssertionError:
         if debug:
-            print val1
-            print val2
+            print(val1)
+            print(val2)
             import pdb;pdb.set_trace()
             raise
         else:

@@ -98,7 +98,7 @@ else:
             kwargs['microsecond'] = int(round(f * 1000000))
         try:
             return datetime.datetime(**kwargs)
-        except ValueError, e:
+        except ValueError as e:
             raise DateTimeRangeError(e.args[0])
 
 if mx:

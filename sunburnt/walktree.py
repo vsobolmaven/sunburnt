@@ -9,11 +9,13 @@
 """This module implements a generic depth first tree and graph traversal.
 """
 from __future__ import print_function
+from __future__ import absolute_import
 from collections import deque, namedtuple
 from functools import reduce
 import operator
 import sys
 import types
+from six.moves import map
 
 version_info = (1, 4)
 version = ".".join(map(str, version_info))
@@ -28,7 +30,7 @@ class ConstSequence(object):
         self._adaptee = seq
     
     def __getitem__(self, key):
-        if isinstance(key, types.SliceType):
+        if isinstance(key, slice):
             return ConstSequence(self._adaptee[key])
         else:
             return self._adaptee[key]

@@ -1,9 +1,12 @@
 from __future__ import absolute_import
 
+from __future__ import print_function
 import collections, copy, operator, re
 
 from .schema import solr_date, SolrError, SolrBooleanField, SolrUnicodeField, WildcardFieldInstance
 from .walktree import walk, event, leaf, exit
+import six
+from functools import reduce
 
 class LuceneQuery(object):
     default_term_re = re.compile(r'^\w+$')
@@ -39,35 +42,35 @@ class LuceneQuery(object):
 
     def options(self):
         opts = {}
-        s = unicode(self)
+        s = six.text_type(self)
         if s:
             opts[self.option_flag] = s
         return opts
 
     def serialize_debug(self, indent=0):
         indentspace = indent * ' '
-        print '%s%s (%s)' % (indentspace, repr(self), "Normalized" if self.normalized else "Not normalized")
-        print '%s%s' % (indentspace, '{')
+        print('%s%s (%s)' % (indentspace, repr(self), "Normalized" if self.normalized else "Not normalized"))
+        print('%s%s' % (indentspace, '{'))
         for term in self.terms.items():
-            print '%s%s' % (indentspace, term)
+            print('%s%s' % (indentspace, term))
         for phrase in self.phrases.items():
-            print '%s%s' % (indentspace, phrase)
+            print('%s%s' % (indentspace, phrase))
         for range in self.ranges:
-            print '%s%s' % (indentspace, range)
+            print('%s%s' % (indentspace, range))
         if self.subqueries:
             if self._and:
-                print '%sAND:' % indentspace
+                print('%sAND:' % indentspace)
             elif self._or:
-                print '%sOR:' % indentspace
+                print('%sOR:' % indentspace)
             elif self._not:
-                print '%sNOT:' % indentspace
+                print('%sNOT:' % indentspace)
             elif self._pow is not False:
-                print '%sPOW %s:' % (indentspace, self._pow)
+                print('%sPOW %s:' % (indentspace, self._pow))
             else:
                 raise ValueError
             for subquery in self.subqueries:
                 subquery.serialize_debug(indent+2)
-        print '%s%s' % (indentspace, '}')
+        print('%s%s' % (indentspace, '}'))
 
     # Below, we sort all our value_sets - this is for predictability when testing.
     def serialize_term_queries(self, terms):
@@ -654,7 +657,7 @@ class MltSolrSearch(BaseSearch):
             if content is not None:
                 if content_charset is None:
                     content_charset = 'utf-8'
-                if isinstance(content, unicode):
+                if isinstance(content, six.text_type):
                     content = content.encode('utf-8')
                 elif content_charset.lower().replace('-', '_') not in self.trivial_encodings:
                     content = content.decode(content_charset).encode('utf-8')
@@ -719,7 +722,7 @@ class Options(object):
     def update(self, fields=None, **kwargs):
         if fields:
             self.schema.check_fields(fields)
-            if isinstance(fields, basestring):
+            if isinstance(fields, six.string_types):
                 fields = [fields]
             for field in set(fields) - set(self.fields):
                 self.fields[field] = {}
@@ -793,7 +796,7 @@ class FilterOptions(object):
 
 class FacetOptions(Options):
     option_name = "facet"
-    opts = {"prefix":unicode,
+    opts = {"prefix":six.text_type,
             "sort":[True, False, "count", "index"],
             "limit":int,
             "offset":lambda self, x: int(x) >= 0 and int(x) or self.invalid_value(),
@@ -848,14 +851,14 @@ class FacetRangeOptions(Options):
         if isinstance(v, (int, float)):
             return v
         elif isinstance(v, solr_date):
-            return unicode(v)
+            return six.text_type(v)
         else:
             return self.invalid_value()
 
     def __validate_range_gap(self, v):
         if isinstance(v, (int, float)):
             return v
-        elif isinstance(v, basestring):
+        elif isinstance(v, six.string_types):
             # A string gap must use Lucene syntax:
             # http://lucene.apache.org/solr/4_0_0/solr-core/org/apache/solr/util/DateMathParser.html
             match = self.__class__.lucene_unit_pattern.match(v)
@@ -873,10 +876,10 @@ class FacetRangeOptions(Options):
         assert isinstance(fields, dict)
         self.fields = dict()
         if fields:
-            self.schema.check_fields(fields.keys())
+            self.schema.check_fields(list(fields.keys()))
             for field, opts in fields.items():
                 self.fields[field] = dict()
-                checked_kwargs = self.check_opts(dict(opts.items() + kwargs.items()))
+                checked_kwargs = self.check_opts(dict(list(opts.items()) + list(kwargs.items())))
                 for k, v in checked_kwargs.items():
                     self.fields[field][k] = v
 
@@ -893,7 +896,7 @@ class FacetRangeOptions(Options):
             if isinstance(opts["start"], float) and not (isinstance(opts["end"], float) and isinstance(opts["gap"], float)):
                 raise SolrError("Incompatible types for start, end, and gap on '%s'." % field)
 
-            if isinstance(opts["start"], solr_date) and not (isinstance(opts["end"], solr_date) and isinstance(opts["gap"], basestring)):
+            if isinstance(opts["start"], solr_date) and not (isinstance(opts["end"], solr_date) and isinstance(opts["gap"], six.string_types)):
                 raise SolrError("Incompatible types for start, end, and gap on '%s'." % field)
 
     def options(self):
@@ -927,14 +930,14 @@ class HighlightOptions(Options):
             "alternateField":lambda self, x: x if x in self.schema.fields else self.invalid_value(),
             "maxAlternateFieldLength":int,
             "formatter":["simple"],
-            "simple.pre":unicode,
-            "simple.post":unicode,
-            "fragmenter":unicode,
+            "simple.pre":six.text_type,
+            "simple.post":six.text_type,
+            "fragmenter":six.text_type,
             "useFastVectorHighlighter":bool,	# available as of Solr 3.1
             "usePhraseHighlighter":bool,
             "highlightMultiTerm":bool,
             "regex.slop":float,
-            "regex.pattern":unicode,
+            "regex.pattern":six.text_type,
             "regex.maxAnalyzedChars":int
             }
     def __init__(self, schema, original=None):
@@ -975,7 +978,7 @@ class MoreLikeThisOptions(Options):
         if fields is None:
             fields = [self.schema.default_field_name]
         self.schema.check_fields(fields)
-        if isinstance(fields, basestring):
+        if isinstance(fields, six.string_types):
             fields = [fields]
         self.fields.update(fields)
 
@@ -1125,7 +1128,7 @@ class FieldLimitOptions(Options):
     def update(self, fields=None, score=False, all_fields=False):
         if fields is None:
             fields = []
-        if isinstance(fields, basestring):
+        if isinstance(fields, six.string_types):
             fields = [fields]
         self.schema.check_fields(fields, {"stored": True})
         self.fields.update(fields)
@@ -1158,7 +1161,7 @@ class FacetQueryOptions(Options):
 
     def options(self):
         if self.queries:
-            return {'facet.query':[unicode(q) for q in self.queries],
+            return {'facet.query':[six.text_type(q) for q in self.queries],
                     'facet':True}
         else:
             return {}
@@ -1182,7 +1185,7 @@ class ExtraOptions(Options):
 def params_from_dict(**kwargs):
     utf8_params = []
     for k, vs in kwargs.items():
-        if isinstance(k, unicode):
+        if isinstance(k, six.text_type):
             k = k.encode('utf-8')
         # We allow for multivalued options with lists.
         if not hasattr(vs, "__iter__"):
@@ -1191,7 +1194,7 @@ def params_from_dict(**kwargs):
             if isinstance(v, bool):
                 v = u"true" if v else u"false"
             else:
-                v = unicode(v)
+                v = six.text_type(v)
             v = v.encode('utf-8')
             utf8_params.append((k, v))
     return sorted(utf8_params)

@@ -4,7 +4,7 @@ from os import path
 from lxml import etree
 import cStringIO as StringIO
 from itertools import islice
-import shutil, tempfile, time, urllib, urlparse
+import shutil, tempfile, time, six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error, six.moves.urllib.parse
 import warnings
 
 from .http import ConnectionError, wrap_http_connection
@@ -99,7 +99,7 @@ class SolrConnection(object):
         if 'maxSegments' in extra_params and 'optimize' not in extra_params:
             raise ValueError("Can't do maxSegments without optimize")
         if extra_params:
-            return "%s?%s" % (self.update_url, urllib.urlencode(sorted(extra_params.items())))
+            return "%s?%s" % (self.update_url, six.moves.urllib.parse.urlencode(sorted(extra_params.items())))
         else:
             return self.update_url
 
@@ -108,7 +108,7 @@ class SolrConnection(object):
             raise TypeError("This Solr instance is only for writing")
         if self.format == 'json':
             params.append(('wt', 'json'))
-        qs = urllib.urlencode(params)
+        qs = six.moves.urllib.parse.urlencode(params)
         url = "%s?%s" % (self.select_url, qs)
         if len(url) > self.max_length_get_url:
             warnings.warn("Long query URL encountered - POSTing instead of "
@@ -132,14 +132,14 @@ class SolrConnection(object):
         """
         if not self.readable:
             raise TypeError("This Solr instance is only for writing")
-        qs = urllib.urlencode(params)
+        qs = six.moves.urllib.parse.urlencode(params)
         base_url = "%s?%s" % (self.mlt_url, qs)
         method = 'GET'
         kwargs = {}
         if content is None:
             url = base_url
         else:
-            get_url = "%s&stream.body=%s" % (base_url, urllib.quote_plus(content))
+            get_url = "%s&stream.body=%s" % (base_url, six.moves.urllib.parse.quote_plus(content))
             if len(get_url) <= self.max_length_get_url:
                 url = get_url
             else:
@@ -169,7 +169,7 @@ class SolrInterface(object):
         self.init_schema()
 
     def make_file_url(self, filename):
-        return urlparse.urljoin(self.conn.url, 'admin/file/?file=') + filename
+        return six.moves.urllib.parse.urljoin(self.conn.url, 'admin/file/?file=') + filename
 
     def get_file(self, filename):
         # return remote file as StringIO and cache the contents
@@ -232,7 +232,7 @@ class SolrInterface(object):
                 finally:
                     # delete dirname
                     shutil.rmtree(dirname)
-        except etree.XMLSyntaxError, e:
+        except etree.XMLSyntaxError as e:
             raise SolrError("Invalid XML in schema:\n%s" % e.args[0])
         return schemadoc
 
