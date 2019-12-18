@@ -1,6 +1,7 @@
 
 from six.moves import range
 from six.moves import zip
+from six.moves.urllib import parse
 
 try:
     from io import StringIO
@@ -114,7 +115,7 @@ class MockConnection(object):
     def request(self, uri, method='GET', body=None, headers=None):
 
         u = six.moves.urllib.parse.urlparse(uri)
-        params = cgi.parse_qs(u.query)
+        params = parse.parse_qs(u.query)
 
         self.tracking_dict.update(url=uri,
                                   params=params,
@@ -263,12 +264,14 @@ mlt_query_tests = (
         (("Content", None, None), ({'stream.body': ['Content'], 'mlt.fl': ['text_field']}, 'GET', ''), None),
         (("Content with space", None, None), ({'stream.body': ['Content with space'], 'mlt.fl': ['text_field']}, 'GET', ''), None),
         ((None, None, "http://source.example.com"), ({'stream.url': ['http://source.example.com'], 'mlt.fl': ['text_field']}, 'GET', ''), None),
-        (("long "*1024+"content", None, None), ({'mlt.fl': ['text_field']}, 'POST', 'long '*1024+"content"), None),
+        ((("long "*1024+"content").encode(), None, None), \
+         ({'mlt.fl': ['text_field']}, 'POST', ('long '*1024+"content").encode()), None),
         (("Content", None, "http://source.example.com"), (), ValueError),
         ((None, None, None), ({'mlt.fl': ['text_field']}, 'GET', ''), None),
-        (('Content', 'not-an-encoding', None), (), LookupError),
+        ((b'Content', 'not-an-encoding', None), (), LookupError),
         (('Content', None, None), ({'stream.body': ['Content'], 'mlt.fl': ['text_field']}, 'GET', ''), None),
-        (('Cont\xe9nt', 'iso-8859-1', None), ({'stream.body': ['Cont\xc3\xa9nt'], 'mlt.fl': ['text_field']}, 'GET', ''), None),
+        ((b'Cont\xe9nt', 'iso-8859-1', None), ({'stream.body':
+                                                [b'Cont\xc3\xa9nt'.decode()], 'mlt.fl': ['text_field']}, 'GET', ''), None),
         )
 
 def check_mlt_query(i, o, E):

@@ -4,11 +4,13 @@ import math
 import operator
 import uuid
 import warnings
+import base64
 
 from lxml.builder import E
 import lxml.etree
 import six
 from functools import reduce
+from functools import total_ordering
 
 try:
     import simplejson as json
@@ -23,6 +25,7 @@ class SolrError(Exception):
     pass
 
 
+@total_ordering
 class solr_date(object):
     """This class can be initialized from either native python datetime
     objects and mx.DateTime objects, and will serialize to a format
@@ -60,17 +63,20 @@ class solr_date(object):
     def __repr__(self):
         return repr(self._dt_obj)
 
-    def __unicode__(self):
+    def __str__(self):
         """ Serialize a datetime object in the format required
         by Solr. See http://wiki.apache.org/solr/IndexingDates
         """
         if hasattr(self._dt_obj, 'isoformat'):
-            return "%sZ" % (self._dt_obj.isoformat(), )
+            return u"%sZ" % (self._dt_obj.isoformat(), )
         strtime = self._dt_obj.strftime("%Y-%m-%dT%H:%M:%S")
         microsecond = self.microsecond
         if microsecond:
-            return "%s.%06dZ" % (strtime, microsecond)
-        return "%sZ" % (strtime,)
+            return u"%s.%06dZ" % (strtime, microsecond)
+        return u"%sZ" % (strtime,)
+
+    def __lt__(self, other):
+        return self._dt_obj < other._dt_obj
 
     def __cmp__(self, other):
         try:
@@ -86,12 +92,12 @@ class solr_date(object):
 
 
 def solr_point_factory(dimension):
-    if dimension < 1:
+    if int(dimension) < 1:
         raise ValueError("dimension of PointType must be greater than one")
     class solr_point(object):
         dim = int(dimension)
         def __init__(self, *args):
-            if dimension > 1 and len(args) == 1:
+            if int(dimension) > 1 and len(args) == 1:
                 v = args[0]
                 if isinstance(v, six.string_types):
                     v_arr = v.split(',')
@@ -109,8 +115,8 @@ def solr_point_factory(dimension):
         def __repr__(self):
             return "solr_point(%s)" % six.text_type(self)
 
-        def __unicode__(self):
-            return ','.join(str(p) for p in self.point)
+        def __str__(self):
+            return u','.join(str(p) for p in self.point)
 
     return solr_point
 
@@ -205,17 +211,13 @@ class SolrBooleanField(SolrField):
 
 class SolrBinaryField(SolrField):
     def from_user_data(self, value):
-        try:
-            return str(value)
-        except (TypeError, ValueError):
-            raise SolrError("Could not convert data to binary string (field %s)" %
-                    self.name)
+        return value
 
     def to_solr(self, value):
-        return six.text_type(value.encode('base64'))
+        return base64.b64encode(value)
 
     def from_solr(self, value):
-        return value.decode('base64')
+        return base64.b64decode(value)
 
 
 class SolrNumericalField(SolrField):
@@ -326,6 +328,7 @@ def SolrFieldTypeFactory(cls, name, **kwargs):
     return globals()[name]
 
 
+@total_ordering
 class SolrFieldInstance(object):
     @classmethod
     def from_solr(cls, field, data):
@@ -349,6 +352,18 @@ class SolrFieldInstance(object):
 
     def to_user_data(self):
         return self.field.to_user_data(self.value)
+
+    def __eq__(self, other): 
+        if not isinstance(other, SolrFieldInstance):
+            return NotImplemented
+        return self.value == other.value
+    def __lt__(self, other): 
+        if not isinstance(other, SolrFieldInstance):
+            return NotImplemented
+        return self.value < other.value
+
+    def __hash__(self): 
+        return hash(self.value)
 
 
 # These are artificial field classes/instances:
@@ -576,7 +591,8 @@ class SolrUpdate(object):
 
     def fields(self, name, values):
         # values may be multivalued - so we treat that as the default case
-        if not hasattr(values, "__iter__"):
+        if any([not hasattr(values, "__iter__"), isinstance(values,
+                                                            six.string_types)]):
             values = [values]
         field_values = [self.schema.field_from_user_data(name, value) for value in values]
         return [self.FIELD({'name':name}, field_value.to_solr())
@@ -595,7 +611,10 @@ class SolrUpdate(object):
                                      for name, values in list(doc.items())]))
 
     def add(self, docs):
-        if hasattr(docs, "items") or not hasattr(docs, "__iter__"):
+        if hasattr(docs, "items") or any([not hasattr(docs, "__iter__"),
+                                           isinstance(docs, six.string_types)]):
+            
+
             # is a dictionary, or anything else except a list
             docs = [docs]
         docs = [(doc if hasattr(doc, "items")
@@ -604,7 +623,8 @@ class SolrUpdate(object):
         return self.ADD(*[self.doc(doc) for doc in docs])
 
     def __str__(self):
-        return lxml.etree.tostring(self.xml, encoding='utf-8')
+        return str(lxml.etree.tostring(self.xml,
+                                       encoding='utf-8').decode('utf-8'))
 
 
 class SolrDelete(object):
@@ -623,7 +643,8 @@ class SolrDelete(object):
     def delete_docs(self, docs):
         if not self.schema.unique_key:
             raise SolrError("This schema has no unique key - you can only delete by query")
-        if hasattr(docs, "items") or not hasattr(docs, "__iter__"):
+        if hasattr(docs, "items") or any([not hasattr(docs, "__iter__"),
+                                          isinstance(docs, six.string_types)]):
             # docs is a dictionary, or an object which is not a list
             docs = [docs]
         doc_id_insts = [self.doc_id_from_doc(doc) for doc in docs]
@@ -655,12 +676,13 @@ class SolrDelete(object):
         return doc_id_inst
 
     def delete_queries(self, queries):
-        if not hasattr(queries, "__iter__"):
+        if any([not hasattr(queries, "__iter__"),
+                isinstance(queries, six.string_types)]):
             queries = [queries]
         return [self.QUERY(six.text_type(query)) for query in queries]
 
     def __str__(self):
-        return lxml.etree.tostring(self.xml, encoding='utf-8')
+        return lxml.etree.tostring(self.xml, encoding='utf-8').decode('utf-8')
 
 
 class SolrFacetCounts(object):

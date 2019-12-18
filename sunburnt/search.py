@@ -2,7 +2,7 @@
 
 
 import collections, copy, operator, re
-
+from six import string_types
 from .schema import solr_date, SolrError, SolrBooleanField, SolrUnicodeField, WildcardFieldInstance
 from .walktree import walk, event, leaf, exit
 import six
@@ -191,7 +191,7 @@ class LuceneQuery(object):
         obj.normalized = True
         return obj
 
-    def __unicode__(self):
+    def __str__(self):
         return self.serialize_to_unicode(level=0, op=None)
 
     def serialize_to_unicode(self, level=0, op=None):
@@ -318,7 +318,8 @@ class LuceneQuery(object):
         # We let people pass in a list of values to match.
         # This really only makes sense for text fields or
         # multivalued fields.
-        if not hasattr(values, "__iter__"):
+
+        if any([not hasattr(values, "__iter__"), isinstance(values, string_types)]):
             values = [values]
         # We can only do a field_name == "*" if:
         if field_name and field_name != "*":
@@ -331,6 +332,7 @@ class LuceneQuery(object):
                 return
             else:
                 raise SolrError("If field_name is '*', then only '*' is permitted as the query")
+
         insts = [field.instance_from_user_data(value) for value in values]
         for inst in insts:
             if isinstance(field, SolrUnicodeField):
@@ -495,8 +497,7 @@ class BaseSearch(object):
         options = {}
         for option_module in self.option_modules:
             options.update(getattr(self, option_module).options())
-        # Next line is for pre-2.6.5 python
-        return dict((k.encode('utf8'), v) for k, v in list(options.items()))
+        return dict((k, v) for k, v in list(options.items()))
 
     def results_as(self, constructor):
         newself = self.clone()
@@ -1184,17 +1185,15 @@ class ExtraOptions(Options):
 
 def params_from_dict(**kwargs):
     utf8_params = []
+
     for k, vs in list(kwargs.items()):
-        if isinstance(k, six.text_type):
-            k = k.encode('utf-8')
         # We allow for multivalued options with lists.
-        if not hasattr(vs, "__iter__"):
+        if any([not hasattr(vs, "__iter__"), isinstance(vs, string_types)]):
             vs = [vs]
         for v in vs:
             if isinstance(v, bool):
                 v = "true" if v else "false"
             else:
                 v = six.text_type(v)
-            v = v.encode('utf-8')
             utf8_params.append((k, v))
     return sorted(utf8_params)

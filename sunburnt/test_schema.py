@@ -5,6 +5,7 @@ import io as StringIO
 import datetime
 import uuid
 import six
+import base64
 
 try:
     import mx.DateTime
@@ -237,7 +238,7 @@ class StringWrapper(object):
     def __init__(self, s):
         self.s = s
 
-    def __unicode__(self):
+    def __str__(self):
         return self.s
 
 
@@ -435,9 +436,10 @@ new_field_types_schema = \
 
 def test_binary_data_understood_ok():
     s = SolrSchema(StringIO.StringIO(new_field_types_schema))
-    blob = "jkgh"
-    coded_blob = blob.encode('base64')
+    blob = b"jkgh"
+    coded_blob = base64.b64encode(blob)
     field_inst = s.field_from_user_data("binary_field", blob)
+
     assert field_inst.value == blob
     assert field_inst.to_solr() == coded_blob
     binary_field = s.match_field("binary_field")

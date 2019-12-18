@@ -6,6 +6,7 @@ try:
 except ImportError:
     from io import StringIO
 
+import six
 import datetime
 
 from lxml.builder import E
@@ -563,9 +564,11 @@ param_encode_data = (
     ({"int":3, "string":"string", "unicode":"unicode"},
      [("int", "3"), ("string", "string"), ("unicode", "unicode")]),
     ({"int":3, "string":"string", "unicode":"\N{UMBRELLA}nicode"},
-     [("int", "3"), ("string", "string"), ("unicode", "\xe2\x98\x82nicode")]),
+     [("int", "3"), ("string", "string"), ("unicode",
+                                           b"\xe2\x98\x82nicode".decode())]),
     ({"int":3, "string":"string", "\N{UMBRELLA}nicode":"\N{UMBRELLA}nicode"},
-     [("int", "3"), ("string", "string"), ("\xe2\x98\x82nicode", "\xe2\x98\x82nicode")]),
+     [("int", "3"), ("string", "string"), (b"\xe2\x98\x82nicode".decode(),
+                                           b"\xe2\x98\x82nicode".decode())]),
     ({"true":True, "false":False},
      [("false", "false"), ("true", "true")]),
     ({"list":["first", "second", "third"]},
@@ -573,8 +576,7 @@ param_encode_data = (
 )
 
 def check_url_encode_data(kwargs, output):
-    # Convert for pre-2.6.5 python
-    s_kwargs = dict((k.encode('utf8'), v) for k, v in list(kwargs.items()))
+    s_kwargs = dict((k, v) for k, v in list(kwargs.items()))
     assert params_from_dict(**s_kwargs) == output
 
 def test_url_encode_data():

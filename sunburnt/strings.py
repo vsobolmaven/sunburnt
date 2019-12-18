@@ -2,7 +2,7 @@
 import six
 
 
-class SolrString(six.text_type):
+class SolrString(str):
     # The behaviour below is only really relevant for String fields rather
     # than Text fields - most queryparsers will strip these characters out
     # for a text field anyway.
@@ -29,7 +29,7 @@ class WildcardString(SolrString):
         self.chars = self.get_wildcards(s)
 
     class SpecialChar(object):
-        def __unicode__(self):
+        def __str__(self):
             return six.text_type(self.char)
     class Asterisk(SpecialChar):
         char = '*'
